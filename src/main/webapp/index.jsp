@@ -1,5 +1,4 @@
 <%@ page import="com.example.wifiproject.api.ApiDataService" %>
-<%@ page import="com.example.wifiproject.api.GetApiData" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
     <head>
@@ -23,6 +22,7 @@
                 document.getElementById("lnt").value = longitude;
             })
         };
+
     </script>
     <body>
         <h1> 공공 wifi 검색하기 </h1>
@@ -30,6 +30,7 @@
         <div>
             <button id = "getLocation" onclick = "getLocation()">현재위치정보</button>
             <button id = "history" onclick = "location.href='history.jsp'"> 검색기록 </button>
+            <button id = "download" onclick = "location.href='download.jsp'">데이터 받기</button>
             <form action = "search.jsp" method = "post">
             LAT
             <input id="lat" name="lat" value=""/>

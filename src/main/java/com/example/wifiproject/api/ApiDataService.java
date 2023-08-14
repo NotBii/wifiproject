@@ -3,8 +3,15 @@ package com.example.wifiproject.api;
 import com.example.wifiproject.DbPath;
 import com.example.wifiproject.history.HistoryDataVO;
 import com.example.wifiproject.history.HistoryService;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.sql.*;
 import java.util.*;
 public class ApiDataService {
@@ -14,37 +21,112 @@ public class ApiDataService {
     ResultSet rs = null;
     PreparedStatement preparedStatement = null;
 
+    public int getTotalData(){
+        deleteApiData();
+        int totalCount = getTotalCount();
+        int startnum = 1;
+        int endNum = 500;
 
-    public void deleteApiData() {
-
-        try {
-            Class.forName("org.sqlite.JDBC");
-            con = DriverManager.getConnection("jdbc:sqlite:" + path);
-            stat = con.createStatement();
-            String sql = "Delete FROM wifidata";
-            preparedStatement = con.prepareStatement(sql);
-            int affected = preparedStatement.executeUpdate();
-            if (affected > 0) {
-                System.out.println("삭제완료");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
+        while (startnum < totalCount) {
             try {
-                if (stat != null && !stat.isClosed()) {
-                    stat.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (con != null && !con.isClosed()) {
-                    con.close();
-                }
-            } catch (SQLException e) {
+                getData(startnum, endNum);
+                startnum += 500;
+                endNum += 500;
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+        return 1;
+    }
+    public static int getTotalCount() {
+        int endnum = -1;
+        JsonObject result = null;
+        StringBuilder sb = new StringBuilder();
+        ApiDataService apiDataService = new ApiDataService();
+
+        try {
+            StringBuilder urlBuilder = new StringBuilder("http://openapi.seoul.go.kr:8088"); /*URL*/
+            urlBuilder.append("/" + URLEncoder.encode("4145796459636f7331313151504c526d", "UTF-8")); /*인증키 (sample사용시에는 호출시 제한됩니다.)*/
+            urlBuilder.append("/" + URLEncoder.encode("json", "UTF-8")); /*요청파일타입 */
+            urlBuilder.append("/" + URLEncoder.encode("TbPublicWifiInfo", "UTF-8")); /*서비스명*/
+            urlBuilder.append("/" + URLEncoder.encode("1", "UTF-8")); /*요청시작위치 */
+            urlBuilder.append("/" + URLEncoder.encode("1", "UTF-8")); /*요청종료위치*/
+
+            URL url = new URL(urlBuilder.toString());
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            con.setRequestProperty("Content-type", "application/json");
+            System.out.println("Response code: " + con.getResponseCode()); /* 연결 자체에 대한 확인이 필요하므로 추가합니다.*/
+            BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), "UTF-8"));
+            if (con.getResponseCode() >= 200 && con.getResponseCode() <= 300) {
+
+                while (br.ready()) {
+                    sb.append(br.readLine());
+                }
+                con.disconnect();
+                System.out.println(sb);
+            }
+            result = (JsonObject) new JsonParser().parse(sb.toString());
+            JsonObject data = (JsonObject) result.get("TbPublicWifiInfo");
+            endnum = data.get("list_total_count").getAsInt();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+        }
+        return endnum;
+    }
+    public static void getData(int startNum, int endNum) {
+        JsonObject result = null;
+        StringBuilder sb = new StringBuilder();
+        ApiDataService apiDataService = new ApiDataService();
+
+        try {
+            StringBuilder urlBuilder = new StringBuilder("http://openapi.seoul.go.kr:8088"); /*URL*/
+            urlBuilder.append("/" + URLEncoder.encode("4145796459636f7331313151504c526d", "UTF-8")); /*인증키 (sample사용시에는 호출시 제한됩니다.)*/
+            urlBuilder.append("/" + URLEncoder.encode("json", "UTF-8")); /*요청파일타입 */
+            urlBuilder.append("/" + URLEncoder.encode("TbPublicWifiInfo", "UTF-8")); /*서비스명*/
+            urlBuilder.append("/" + URLEncoder.encode(String.valueOf(startNum), "UTF-8")); /*요청시작위치 */
+            urlBuilder.append("/" + URLEncoder.encode(String.valueOf(endNum), "UTF-8")); /*요청종료위치*/
+
+
+            URL url = new URL(urlBuilder.toString());
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            con.setRequestProperty("Content-type", "application/json");
+            System.out.println("Response code: " + con.getResponseCode()); /* 연결 자체에 대한 확인이 필요하므로 추가합니다.*/
+            BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), "UTF-8"));
+
+            if (con.getResponseCode() >= 200 && con.getResponseCode() <= 300) {
+
+
+                while (br.ready()) {
+                    sb.append(br.readLine());
+                }
+
+                con.disconnect();
+                System.out.println(sb);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        result = (JsonObject) new JsonParser().parse(sb.toString());
+        StringBuilder out = new StringBuilder();
+
+        JsonObject data = (JsonObject) result.get("TbPublicWifiInfo");
+        JsonArray dataArr = (JsonArray) data.get("row");
+        JsonObject tmp;
+
+        List<JsonObject> datalist = new ArrayList<>();
+
+
+        for (int i = 0; i < dataArr.size(); i++)  {
+            tmp = (JsonObject) dataArr.get(i);
+
+            datalist.add(tmp);
+        }
+        apiDataService.insertApiData(datalist);
     }
 
     public void insertApiData(List<JsonObject> dataList) {
@@ -165,6 +247,37 @@ public class ApiDataService {
 
     }
 
+    public void deleteApiData() {
+
+        try {
+            Class.forName("org.sqlite.JDBC");
+            con = DriverManager.getConnection("jdbc:sqlite:" + path);
+            stat = con.createStatement();
+            String sql = "Delete FROM wifidata";
+            preparedStatement = con.prepareStatement(sql);
+            int affected = preparedStatement.executeUpdate();
+            if (affected > 0) {
+                System.out.println("삭제완료");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (stat != null && !stat.isClosed()) {
+                    stat.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (con != null && !con.isClosed()) {
+                    con.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
     public int ApiDataCount() {
         int dataCount = -1;
         try {
