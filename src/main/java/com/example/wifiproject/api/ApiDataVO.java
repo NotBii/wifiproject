@@ -1,6 +1,7 @@
 package com.example.wifiproject.api;
 
 public class ApiDataVO {
+    double dist; //거리
     String mgrNo; // 관리번호
     String wrdofc; // 자치구
     String wifiName; //와이파이명
@@ -14,9 +15,17 @@ public class ApiDataVO {
     int cnstcYear; //설치연도
     String inOutDoor; //실내외구분
     String remars3; //접속환경
-    Double xCor; //x좌표
-    Double yCor; //t좌표
+    Double lat; //x좌표(LNT)
+    Double lnt; //y좌표(LAT)
     String workDttm; // 작업일자
+
+    public double getDist() {
+        return dist;
+    }
+
+    public void setDist(double dist) {
+        this.dist = dist;
+    }
 
     public String getMgrNo() {
         return mgrNo;
@@ -122,20 +131,20 @@ public class ApiDataVO {
         this.remars3 = remars3;
     }
 
-    public Double getxCor() {
-        return xCor;
+    public Double getLat() {
+        return lat;
     }
 
-    public void setxCor(Double xCor) {
-        this.xCor = xCor;
+    public void setLat(Double lat) {
+        this.lat = lat;
     }
 
-    public Double getyCor() {
-        return yCor;
+    public Double getLnt() {
+        return lnt;
     }
 
-    public void setyCor(Double yCor) {
-        this.yCor = yCor;
+    public void setLnt(Double lnt) {
+        this.lnt = lnt;
     }
 
     public String getWorkDttm() {
@@ -145,4 +154,5 @@ public class ApiDataVO {
     public void setWorkDttm(String workDttm) {
         this.workDttm = workDttm;
     }
+
 }
